@@ -8,3 +8,8 @@ Each folder will contain a Readme regarding my personal research on the specific
 
 ## Updates
 Most famous algorithms will probably be added with time, if you have any requests for a new algorithm please open an issue to let me know.
+
+# Info
+Compilation was done using Visual Studio 2022, but results shouldn't change much as long as one's using a modern c++ compiler.  
+Debugging was done using x64dbg, without .pdb files to make the research more meaningful.  
+Any decompilation seen is done using Hex-Rays decompiler from IDA Pro.  
