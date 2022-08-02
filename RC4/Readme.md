@@ -16,7 +16,8 @@ gets argc and argv, in figure it's represented as the breakpointed instruction.
 ![image](https://user-images.githubusercontent.com/88135556/182354661-1dbaa61b-736a-46d0-9825-b7852bd98ee8.png)
 Zones marked as 1 are (obviously) malloc calls, whilst the ones marked with 2 are std::cout calls (you can see that from the first argument passed being a basic_osstream.
 
-Now we can start making a comparison with our source code:
+Now we can start making a comparison with our source code:  
+
 ![image](https://user-images.githubusercontent.com/88135556/182355173-0bd8ea43-c945-49f0-9f35-c613096307cd.png)
 
 We can already identify a couple areas of interest, in particular the mallocs and std::cout.
@@ -48,9 +49,11 @@ As it turns out, the compiler decided to inline my RC4Factory function, probably
 but since both the local variable and the returned value are on the stack, it makes sense to make them the same variable and inline the whole thing.
 
 This is the routine equivalent to RC4Factory:
+
 ![image](https://user-images.githubusercontent.com/88135556/182440192-6aab08a8-433d-4443-b455-be2c09ed5129.png)
 
 Then there was another thing that really caught my attention:
+
 ![image](https://user-images.githubusercontent.com/88135556/182440447-afaf32e4-897c-42c9-bcb1-35dd1176032c.png)
 
 This routine here didn't make any sense to me at first, since it used floating point registers to do some weird loop.
@@ -62,7 +65,8 @@ Before diving in the disassembly I keep in mind that the KSA function does some 
 Therefore I should be able to identify this specific function just from this 256 bytes array being first initialized with numbers 0 to 255, since such
 array will need to be initialized every time when performing encryption or decryption.
 
-These are the arguments being passed:
+These are the arguments being passed:  
+
 ![image](https://user-images.githubusercontent.com/88135556/182442144-8ce11732-fde6-4c57-95e9-7ba20c0279b3.png)
 
 It seems really obvious that second and fourth args are connected, in particular second is our message, and fourth is meslen!
@@ -82,9 +86,11 @@ It's really easy to answer such question:
 By pressing G inside x64dbg we can access the graph mode, which will help us a lot recognizing the algorithm, just look at this!
 
 Easily spotted SBox initialization routine:
+
 ![image](https://user-images.githubusercontent.com/88135556/182443469-b983521a-891e-4a8b-af40-b77e7984a763.png)
 
 And here is the ending xor before looping:
+
 ![image](https://user-images.githubusercontent.com/88135556/182443752-ac529cd3-c26b-4bfd-800c-5fd702482a0d.png)
 
 ## Key takeaways
