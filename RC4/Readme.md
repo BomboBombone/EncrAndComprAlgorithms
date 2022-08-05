@@ -1,8 +1,3 @@
-# Info
-Compilation was done using Visual Studio 2022, but results shouldn't change much as long as one's using a modern c++ compiler.
-Debugging was done using x64dbg.
-Any decompilation seen is done using Hex-Rays decompiler from IDA Pro.
-
 # Finding main
 First of all, one can't do much but notice that there's a lot of seemingly junk code, which is in reality added by the C++ compiler.
 Such code is composed of basically all the initialization functions, for things such as calling global object constructors, getting env variables, etc.
