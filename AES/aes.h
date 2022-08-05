@@ -1,7 +1,9 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
+
 #define ZeroMemory(p, len) for(int i = 0; i < len; i++) p[i] = 0;
+#define assert(expr, mes) if(!expr) {printf(mes); *(int*)0 = 0;}
 typedef unsigned int word;
 typedef unsigned char byte;
 struct AES

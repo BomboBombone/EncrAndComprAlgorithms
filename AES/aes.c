@@ -325,6 +325,9 @@ void DecryptBlock(struct AES* thisptr, const byte in[], byte out[],
 
 byte* EncryptECB(struct AES* thisptr, const byte in[], unsigned int inLen,
 	const byte key[]) {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* roundKeys = (byte*)malloc(4 * thisptr->Nb * (thisptr->Nr + 1));
 	KeyExpansion(thisptr, key, roundKeys);
@@ -339,6 +342,9 @@ byte* EncryptECB(struct AES* thisptr, const byte in[], unsigned int inLen,
 
 byte* DecryptECB(struct AES* thisptr, const byte in[], unsigned int inLen, const byte key[])
 {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* roundKeys = (byte*)malloc(4 * thisptr->Nb * (thisptr->Nr + 1));
 	KeyExpansion(thisptr, key, roundKeys);
@@ -353,6 +359,9 @@ byte* DecryptECB(struct AES* thisptr, const byte in[], unsigned int inLen, const
 
 byte* EncryptCBC(struct AES* thisptr, const byte in[], unsigned int inLen, const byte key[], const byte* iv)
 {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* block = (byte*)malloc(thisptr->blockBytesLen);
 	byte* roundKeys = (byte*)malloc(4 * thisptr->Nb * (thisptr->Nr + 1));
@@ -372,6 +381,9 @@ byte* EncryptCBC(struct AES* thisptr, const byte in[], unsigned int inLen, const
 
 byte* DecryptCBC(struct AES* thisptr, const byte in[], unsigned int inLen, const byte key[], const byte* iv)
 {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* block = (byte*)malloc(thisptr->blockBytesLen);
 	byte* roundKeys = (byte*)malloc(4 * thisptr->Nb * (thisptr->Nr + 1));
@@ -391,6 +403,9 @@ byte* DecryptCBC(struct AES* thisptr, const byte in[], unsigned int inLen, const
 
 byte* EncryptCFB(struct AES* thisptr, const byte in[], unsigned int inLen, const byte key[], const byte* iv)
 {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* block = (byte*)malloc(thisptr->blockBytesLen);
 	byte* encryptedBlock = (byte*)malloc(thisptr->blockBytesLen);
@@ -412,6 +427,9 @@ byte* EncryptCFB(struct AES* thisptr, const byte in[], unsigned int inLen, const
 
 byte* DecryptCFB(struct AES* thisptr, const byte in[], unsigned int inLen, const byte key[], const byte* iv)
 {
+	if (inLen % 16) {
+		return 0; //If length is invalid return a nullptr
+	}
 	byte* out = (byte*)malloc(inLen);
 	byte* block = (byte*)malloc(thisptr->blockBytesLen);
 	byte* encryptedBlock = (byte*)malloc(thisptr->blockBytesLen);
