@@ -1,5 +1,9 @@
 # Encryption and compression algorithms in compiled binaries
-The main goal of this repository is to document my journey through learning how to recognize some of the most popular algorithms in assembly (x64) from C++ compiled binaries, since the C++ compiler usually adds a level of difficulty for anyone that wants to reverse engineer the binary, given usually by the VC runtime libraries, that could eventually (if one really wanted) be stripped out, but the excersise is meant to be realistic, and therefore a bit harder.
+The main goal of this repository is to document my journey through learning how to recognize some of the most popular algorithms in assembly (x64) from C++ compiled binaries
+
+## Why not compile this in C?
+Since the C++ compiler usually adds a level of abstraction to the main function, given by the VC runtime libraries, like init routines for exception handling, env variables, etc..., it makes the binary more realistic since good coding practices suggest the use of runtime libraries.
+It will also give you a feel for how the C++ compiler works under the hood, how it decides which call standard is the best, when to inline, etc...
 
 ## Structure of the repository
 Each algorithm will have its own folder with its own project. 
