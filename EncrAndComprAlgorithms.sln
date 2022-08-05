@@ -5,6 +5,8 @@ VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RC4", "RC4\RC4.vcxproj", "{D0C8CB06-6F7D-4499-9B2A-285C9063AEE8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AES", "AES\AES.vcxproj", "{020CEED2-A66D-42CA-915B-42D97FE40521}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{D0C8CB06-6F7D-4499-9B2A-285C9063AEE8}.Release|x64.Build.0 = Release|x64
 		{D0C8CB06-6F7D-4499-9B2A-285C9063AEE8}.Release|x86.ActiveCfg = Release|Win32
 		{D0C8CB06-6F7D-4499-9B2A-285C9063AEE8}.Release|x86.Build.0 = Release|Win32
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Debug|x64.ActiveCfg = Debug|x64
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Debug|x64.Build.0 = Debug|x64
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Debug|x86.ActiveCfg = Debug|Win32
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Debug|x86.Build.0 = Debug|Win32
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Release|x64.ActiveCfg = Release|x64
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Release|x64.Build.0 = Release|x64
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Release|x86.ActiveCfg = Release|Win32
+		{020CEED2-A66D-42CA-915B-42D97FE40521}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
