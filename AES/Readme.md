@@ -181,6 +181,10 @@ The highligthed function here does another permutation on the same array:
 
 ![image](https://user-images.githubusercontent.com/88135556/183258144-c4d392a9-065c-47a1-9139-3957803bc562.png)
 
+Next we have a very interesting function:
+
+![image](https://user-images.githubusercontent.com/88135556/183261335-45266a34-360a-448d-850a-214e6f1b1ac5.png)
+
 Here we have the first couple instructions of the routine:
 
 ![image](https://user-images.githubusercontent.com/88135556/183260668-0382e957-381e-44c5-b4df-0228e8dbf307.png)
