@@ -52,6 +52,7 @@ like a console print, or a specific function call, and where it ends, so that yo
 
 Let's dive deeper!
 As we can see the last unnamed function is just a free() wrapper.
+
 ![image](https://user-images.githubusercontent.com/88135556/183245395-9f61bed7-c1a8-428f-94db-137a4e9639aa.png)
 
 Instead, the first unnamed function already looks very interesting from a first glance.
