@@ -32,52 +32,88 @@ namespace Tests
             BigInt* BI2 = (BigInt*)BigIntFactoryBlocks(type, bigint2);
 
             Assert::IsTrue(SubBigInt(BI1, BI2) &&
-                *(uint64_t*)BI1->data == UINT64_MAX - 1);
+                ((uint64_t*)BI1->data)[0] == UINT64_MAX - 1);
 
             free(BI1);
             free(BI2);
 		}
-        TEST_METHOD(Addition)
+        TEST_METHOD(SubtractionOverflow)
         {
+            uint64_t expectedDiff = 0x52;
+            uint64_t base = 0x10;
             auto type = BI_256;
             uint64_t bigint1[] = {
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, UINT64_MAX - 1
-            };
-            uint64_t result[] = {
-                0xb0,0x36,0x70,0xf5,0xc1,0xc5,0x4d,0x6c,
-                0xac,0x21,0x5d,0x80,0x2b,0x52,0x63,0xf6,
-                0x98,0x5c,0x47,0x78,0xf6,0x79,0x56,0x9b,
-                0xd3,0xc7,0xa4,0xf4,0x55,0x86,0x50,0xd0
+                0xd0, 0x50, 0x86, 0x55, 0xf4, 0xa4, 0xc7, 0xd3,
+                0x9b, 0x56, 0x79, 0xf6, 0x78, 0x47, 0x5c, 0x98,
+                0xf6, 0x63, 0x52, 0x2b, 0x80, 0x5d, 0x21, 0xac,
+                0x6c, 0x4d, 0xc5, 0xc1, 0xf5, 0x70, 0x35, base
             };
             uint64_t bigint2[] = {
                 0xd0, 0x50, 0x86, 0x55, 0xf4, 0xa4, 0xc7, 0xd3,
                 0x9b, 0x56, 0x79, 0xf6, 0x78, 0x47, 0x5c, 0x98,
                 0xf6, 0x63, 0x52, 0x2b, 0x80, 0x5d, 0x21, 0xac,
-                0x6c, 0x4d, 0xc5, 0xc1, 0xf5, 0x70, 0x35, 0xb2
+                0x6c, 0x4d, 0xc5, 0xc1, 0xf5, 0x70, 0x35, base + expectedDiff
             };
 
             BigInt* BI1 = (BigInt*)BigIntFactoryBlocks(type, bigint1);
             BigInt* BI2 = (BigInt*)BigIntFactoryBlocks(type, bigint2);
 
+            SubBigInt(BI1, BI2);
+
+            Assert::IsTrue(((uint64_t*)BI1->data)[0] == UINT64_MAX - (expectedDiff - 1) && BI1->sign);
+            for (int i = 1; i < sizeof bigint1 / 8; i++) {
+                Assert::IsTrue(((uint64_t*)BI1->data)[i] == UINT64_MAX);
+            }
+
+            free(BI1);
+            free(BI2);
+        }
+        TEST_METHOD(Addition)
+        {
+            uint64_t expectedDiff = 0x52;
+            uint64_t base = 0x10;
+            auto type = BI_256;
+            uint64_t bigint1[32] = { 0 };
+            for (int i = 0; i < 31; i++) {
+                bigint1[i] = UINT64_MAX;
+            }
+            bigint1[31] = UINT64_MAX - (expectedDiff - 1);
+            
+            uint64_t result[] = {
+                base, 0x35, 0x70, 0xf5, 0xc1, 0xc5, 0x4d, 0x6c,
+                0xac, 0x21, 0x5d, 0x80, 0x2b, 0x52, 0x63, 0xf6,
+                0x98, 0x5c, 0x47, 0x78, 0xf6, 0x79, 0x56, 0x9b,
+                0xd3, 0xc7, 0xa4, 0xf4, 0x55, 0x86, 0x50, 0xd0
+            };
+
+            uint64_t bigint2[] = {
+                0xd0, 0x50, 0x86, 0x55, 0xf4, 0xa4, 0xc7, 0xd3,
+                0x9b, 0x56, 0x79, 0xf6, 0x78, 0x47, 0x5c, 0x98,
+                0xf6, 0x63, 0x52, 0x2b, 0x80, 0x5d, 0x21, 0xac,
+                0x6c, 0x4d, 0xc5, 0xc1, 0xf5, 0x70, 0x35, base + expectedDiff
+            };
+
+            BigInt* BI1 = (BigInt*)BigIntFactoryBlocks(type, bigint1);
+            BigInt* BI2 = (BigInt*)BigIntFactoryBlocks(type, bigint2);
+
+            BI1->sign = 1;
             Assert::IsTrue(AddBigInt(BI1, BI2) &&
-                !memcmp(BI1->data, result, type == BI_128 ? 128 : 256));
+                !memcmp(BI1->data, result, type == BI_128 ? 128 : 256) &&
+                !BI1->sign);
 
             free(BI1);
             free(BI2);
         }
         TEST_METHOD(Multiplication) {
             BigInt* a = BigIntFactoryBlocks(BI_256, 0);
-            a->data[1] = 8;
+            ((uint64_t*)a->data)[0] = 0x9c5db1fa679f6aeb;
             BigInt* b = BigIntFactoryBlocks(BI_256, 0);
-            b->data[0] = 2;
+            ((uint64_t*)b->data)[0] = 0x95a8f09bc8de881f;
 
             BigInt* out = BigIntFactoryBlocks(BI_512, 0);
             MulBigInt256(a, b, (uint32_t*)out->data);
 
-            Assert::IsTrue(out->data[1] == 16);
+            Assert::IsTrue(((uint64_t*)out->data)[1] == 0x5b69b90a88ea6d0b);
 
             free(a);
             free(b);
@@ -98,6 +134,31 @@ namespace Tests
             DivBigInt(a, b, q, r);
 
             Assert::IsTrue(((unsigned int*)q->data)[0] == dividend / divisor && ((unsigned int*)r->data)[0] == dividend % divisor);
+
+            free(a);
+            free(b);
+            free(q);
+            free(r);
+        }
+        TEST_METHOD(DivisionNegative) {
+            unsigned int dividend = 0xf439;
+            unsigned int divisor = 0x3;
+
+            BigInt* a = BigIntFactoryBlocks(BI_256, 0);
+            for (int i = 0; i < 512 / 8; i++) {
+                ((uint64_t*)a->data)[i] = UINT64_MAX;
+            }
+            ((unsigned short*)a->data)[0] = dividend;
+            a->sign = 1;
+            BigInt* b = BigIntFactoryBlocks(BI_256, 0);
+            ((unsigned int*)b->data)[0] = divisor;
+
+            BigInt* q = BigIntFactoryBlocks(BI_256, 0);
+            BigInt* r = BigIntFactoryBlocks(BI_256, 0);
+
+            DivBigInt(a, b, q, r);
+
+            Assert::IsTrue(((unsigned int*)q->data)[0] == 0xfffffc13 /*-1005*/);
 
             free(a);
             free(b);
@@ -222,12 +283,38 @@ namespace Tests
             mes[0] = 89;
 
             BigInt* res = RSACrypt(rsa, mes);
-            char* out = RSADecrypt(rsa, res);
+            BigInt* out = RSADecrypt(rsa, res);
 
-            Assert::IsTrue(!(memcmp(mes, out, 256)));
+            Assert::IsTrue(!(memcmp(mes, out->data, 256)));
 
             free(q);
             free(p);
+            free(out);
+            RSADispose(rsa);
+        }
+        TEST_METHOD(TestRSACryptDecryptInverse) {
+            BigInt* p = BigIntFactoryBlocks(BI_256, 0);
+            BigInt* q = BigIntFactoryBlocks(BI_256, 0);
+
+            p->data[0] = 53;
+            q->data[0] = 59;
+            unsigned int e = 3;
+
+            RSA* rsa = RSAFactory(p, q, e, RSA_256);
+
+            char _mes[512] = { 0 };
+            _mes[0] = 89;
+            BigInt* mes = BigIntFactory(BI_512, (const char*)_mes);
+
+            BigInt* res = RSADecrypt(rsa, mes);
+            BigInt* out = RSACrypt(rsa, (char*)res->data);
+
+            Assert::IsTrue(!(memcmp(mes, out->data, 256)));
+
+            free(q);
+            free(p);
+            free(out);
+            RSADispose(rsa);
         }
     };
 }

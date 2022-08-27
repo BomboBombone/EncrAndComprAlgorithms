@@ -90,7 +90,7 @@ struct BigInt* BigIntFactoryRef(struct BigInt* p)
 	size_t size = 512;
 
 	if (!p) goto end;
-	p->type = BI_512;
+	p->type = BI_256;
 	p->sign = 0;
 
 	for (unsigned int i = 0; i < size; i++) {
@@ -103,36 +103,57 @@ end:
 
 byte AddBigInt(struct BigInt* lhs, struct BigInt* rhs) {
 	if (rhs->sign) {
-		rhs->sign = 0;
+		MakePositive(rhs);
 		SubBigInt(lhs, rhs);
-		rhs->sign = 1;
-
+		InvertSign(rhs);
 		return;
 	}
 
 	byte carry = 0;
-	unsigned int size = lhs->type == BI_128 ? 128 : 256;
-	byte dwords = size / 8;
+	unsigned int lSz = 128;
+	unsigned int rSz = 128;
+
+	switch (lhs->type)
+	{
+	case BI_256:
+		lSz = 256;
+		break;
+	case BI_512:
+		lSz = 512;
+		break;
+	}
+	switch (rhs->type)
+	{
+	case BI_256:
+		rSz = 256;
+		break;
+	case BI_512:
+		rSz = 512;
+		break;
+	}
 
 	if (lhs->sign) {
 		struct BigInt buf;
-		((uint64_t*)buf.data)[dwords] = 1;
+		BigIntFactoryRef(&buf);
+		buf.type = BI_512;
+		buf.data[LenBigInt(lhs)] = 1;
 
 		lhs->sign = 0;
 		SubBigInt(&buf, lhs);
 		CopyBigInt(lhs, &buf);
-
 		CopyBigInt(&buf, rhs);
 		SubBigInt(&buf, lhs);
 		CopyBigInt(lhs, &buf);
-		lhs->sign = 1;
 	}
 	else {
-		for (byte i = dwords - 1; i < dwords; i--) {
+		byte lDwords = lSz / 8;
+		byte rDwords = rSz / 8;
+		byte minDwords = rDwords < lDwords ? rDwords : lDwords;
+		for (byte i = minDwords - 1; i < minDwords; i--) {
 			uint64_t res = ((uint64_t*)lhs)[i] + ((uint64_t*)rhs)[i];
 
 			if (res < ((uint64_t*)lhs)[i] || res < ((uint64_t*)rhs)[i]) {
-				for (byte j = i + 1; j < dwords; j++) {
+				for (byte j = i + 1; j < rDwords; j++) {
 					if (((uint64_t*)lhs)[j] == UINT64_MAX) {
 						((uint64_t*)lhs)[j] = 0;
 						continue;
@@ -154,10 +175,9 @@ byte AddBigInt(struct BigInt* lhs, struct BigInt* rhs) {
 byte SubBigInt(struct BigInt* lhs, struct BigInt* rhs)
 {
 	if (rhs->sign) {
-		rhs->sign = 0;
+		MakePositive(rhs);
 		AddBigInt(lhs, rhs);
-		rhs->sign = 1;
-
+		InvertSign(rhs);
 		return;
 	}
 
@@ -184,24 +204,22 @@ byte SubBigInt(struct BigInt* lhs, struct BigInt* rhs)
 	}
 	byte lDwords = lSz / 8;
 	byte rDwords = rSz / 8;
+	byte minDwords = rDwords < lDwords ? rDwords : lDwords;
 
-	for (byte i = lDwords - 1; i < lDwords; i--) {
+	for (unsigned int i = minDwords - 1; i < minDwords; i--) {
 		uint64_t res = ((uint64_t*)lhs)[i] - ((uint64_t*)rhs)[i];
 		if (((uint64_t*)lhs)[i] < ((uint64_t*)rhs)[i]) {
-			if (i == rDwords - 1)
-				return false;
+			if (i == lDwords - 1)
+				lhs->sign = 1;
 
-			for (byte j = (i + 1); j < rDwords; j++) {
+			for (unsigned int j = (i + 1); j < lDwords; j++) {
 				if (((uint64_t*)lhs)[j]) {
 					((uint64_t*)lhs)[j]--;
 					break;
 				}
-				else if (!j) {
-					((uint64_t*)lhs)[j] = UINT64_MAX;
-					lhs->sign = 1;
-					return true;
-				}
 				else {
+					if (j == lDwords - 1)
+						lhs->sign = 1;
 					((uint64_t*)lhs)[j] = UINT64_MAX;
 					continue;
 				}
@@ -272,27 +290,83 @@ byte IsBiggerBigInt(struct BigInt* lhs, struct BigInt* rhs) {
 	return false;
 }
 
+void CopyBigInt(struct BigInt* dst, struct BigInt* src) {
+	memcpy(dst, src, sizeof (struct BigInt));
+}
+
+void InvertSign(struct BigInt* p) {
+	struct BigInt buf;
+	BigIntFactoryRef(&buf);
+	buf.type = BI_512;
+
+	if (p->sign) {
+		int len = LenBigInt(p);
+		buf.data[len] = 1;
+		p->sign = 0;
+		SubBigInt(&buf, p);
+		CopyBigInt(p, &buf);
+	}
+	else {
+		struct BigInt two;
+		BigIntFactoryRef(&two);
+		two.data[0] = 2;
+
+		MulBigInt256(p, &two, &buf);
+		SubBigInt(p, &buf);
+	}
+}
+
+void MakePositive(struct BigInt* p) {
+	if (p->sign)
+		InvertSign(p);
+}
+
 //Multiply 2 BigInts up to 256 bytes
 void MulBigInt256(struct BigInt* lhs, struct BigInt* rhs, uint32_t* out) {
+	byte oldSignA = lhs->sign;
+	byte oldSignB = rhs->sign;
+	byte endSign = oldSignA ^ oldSignB;
+	MakePositive(lhs);
+	MakePositive(rhs);
+
 	unsigned int words = 512 / 4;
-	
+
+	byte carry = 0;
+
 	for (unsigned int i = 0; i < words; i++) {
-		for (unsigned int  j = 0; j < words; j++) {
+		for (unsigned int j = 0; j < words; j++) {
 			uint64_t r = ((uint32_t*)rhs->data)[i];
 			uint64_t l = ((uint32_t*)lhs->data)[j];
 
 			uint64_t res = r * l;
+			l = res >> 32;
+			r = (res << 32) >> 32;
 			if (i + j < words) {
-				out[i + j] += res;
-				if (((uint32_t*)&res)[1] && i + j + 1 < words)
-					out[i + j + 1] += ((uint32_t*)&res)[1];
+				uint32_t old = out[i + j];
+				r += old;
+				out[i + j] = r;
+				if (out[i + j] < r)
+					l++;
+				if (l && i + j + 1 < words) {
+					old = out[i + j + 1] ;
+					res = old + l + carry;
+
+					out[i + j + 1] = res;
+					if (out[i + j + 1] < res)
+						carry = 1;
+					else
+						carry = 0;
+				}
 			}
 		}
 	}
-}
-
-void CopyBigInt(struct BigInt* dst, struct BigInt* src) {
-	memcpy(dst, src, sizeof (struct BigInt));
+	if (endSign) {
+		InvertSign(out);
+	}
+	if (oldSignA)
+		InvertSign(lhs);
+	if (oldSignB)
+		InvertSign(rhs);
 }
 
 void DivBigInt(struct BigInt* a, struct BigInt* b, struct BigInt* q, struct BigInt* r) {
@@ -300,10 +374,18 @@ void DivBigInt(struct BigInt* a, struct BigInt* b, struct BigInt* q, struct BigI
 		CopyBigInt(r, a);
 		return;
 	}
+	if (IsZeroBigInt(b))
+		return;
+	byte oldSignA = a->sign;
+	byte oldSignB = b->sign;
+	byte endSign = oldSignA ^ oldSignB;
+	MakePositive(a);
+	MakePositive(b);
+
 	unsigned int aLen = LenBitBigInt(a);
 	unsigned int bLen = LenBitBigInt(b);
 
-	struct BigInt* buf = BigIntFactory(BI_512, 0);
+	struct BigInt* buf = BigIntFactory(b->type, 0);
 	GetBitsBigInt(a, aLen - bLen, aLen, buf);
 
 	for (int i = aLen - bLen; i >= 0; i--) {
@@ -324,6 +406,14 @@ void DivBigInt(struct BigInt* a, struct BigInt* b, struct BigInt* q, struct BigI
 	}
 
 	CopyBigInt(r, buf);
+	if (endSign) {
+		InvertSign(r);
+		InvertSign(q);
+	}
+	if (oldSignA)
+		InvertSign(a);
+	if (oldSignB)
+		InvertSign(b);
 
 	free(buf);
 }
@@ -341,7 +431,7 @@ void ModBigInt(struct BigInt* base, struct BigInt* mod) {
 
 	DivBigInt(base, mod, &q, &r);
 
-	memcpy(base, &r, sizeof base);
+	CopyBigInt(base, &r);
 }
 
 void ShiftRightBigInt(struct BigInt* base, unsigned int amount) {
@@ -353,7 +443,7 @@ void ShiftRightBigInt(struct BigInt* base, unsigned int amount) {
 	size_t size = LenBigInt(base);
 
 	if (bytes) {
-		for (int i = bytes; i < size; i++) {
+		for (int i = bytes; i < 512; i++) {
 			base->data[i - bytes] = base->data[i];
 			base->data[i] = 0;
 		}
@@ -454,6 +544,10 @@ unsigned int LenBitBigInt(struct BigInt* p) {
 	bytes += bits - 1;
 }
 
+byte EqualsBigInt(struct BigInt* lhs, struct BigInt* rhs) {
+	return !memcmp(lhs->data, rhs->data, 512);
+}
+
 void PowmBigInt(struct BigInt* base, struct BigInt* mod, struct BigInt* power, struct BigInt* out) {
 	struct BigInt _b;
 	struct BigInt _c;
@@ -462,31 +556,34 @@ void PowmBigInt(struct BigInt* base, struct BigInt* mod, struct BigInt* power, s
 	struct BigInt zero;
 	BigIntFactoryRef(&zero);
 	BigIntFactoryRef(c);
+	c->type = BI_512;
 	CopyBigInt(b, base);
+	ModBigInt(b, mod);
+	if (IsZeroBigInt(b))
+		return;
 
+	ZeroBigInt(out);
 	out->data[0] = 1;
 
-	struct BigInt* e = BigIntFactoryMove(power);
+	unsigned int powerLen = LenBitBigInt(power);
 
-	while (IsBiggerBigInt(e, &zero)) {
-		if (e->data[0] & 1) {
+	for (unsigned int i = 0; i < powerLen; i++) {
+		// if (e & 1)
+		if (GetBitBigInt(power, i)) {
+			// out = (out * b) % mod;
 			MulBigInt256(out, b, c);
 			ModBigInt(c, mod);
-			memcpy(out, c, b->type == BI_128 ? 128 : 256);
+			CopyBigInt(out, c);
 
-			ZeroMemory(c->data, 512);
+			ZeroBigInt(c);
 		}
+
+		// b *= b;
 		MulBigInt256(b, b, c);
 		ModBigInt(c, mod);
-		memcpy(b, c, b->type == BI_128 ? 128 : 256);
-		ZeroMemory(c->data, 512);
-
-		ShiftRightBigInt(e, 1);
+		CopyBigInt(b, c);
+		ZeroBigInt(c);
 	}
-
-	ModBigInt(out, mod);
-
-	free(e);
 }
 
 void PowmBigIntUInt(struct BigInt* base, struct BigInt* mod, unsigned int power, struct BigInt* out)
@@ -509,6 +606,13 @@ void PowmBigIntChar(unsigned char base, struct BigInt* mod, unsigned int power, 
 	b->data[0] = base;
 
 	PowmBigIntUInt(b, mod, power, out);
+}
+
+void ZeroBigInt(struct BigInt* p) {
+	for (int i = 512 / 4 - 1; i >= 0; i--) {
+		((unsigned int*)p->data)[i] = 0;
+	}
+	p->sign = 0;
 }
 
 byte IsZeroBigInt(struct BigInt* rhs)

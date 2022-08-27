@@ -1,43 +1,61 @@
-#include "euclidean.h"
+﻿#include "euclidean.h"
 
-byte EuclideanGCD(struct BigInt* gcd, struct BigInt* lhs, struct BigInt* rhs, struct BigInt* x, struct BigInt* y)
-{
-	struct BigInt* amodb = BigIntFactory(BI_512, 0);
-	struct BigInt* rBuf = BigIntFactory(BI_512, 0);
+void EuclideanGCD(struct BigInt* gcd, struct BigInt* lhs, struct BigInt* rhs, struct BigInt* x, struct BigInt* y) {
+	struct BigInt remainderBuf;
+	struct BigInt old_s, old_r, s, r;
+	BigIntFactoryRef(&s);
+	BigIntFactoryRef(&old_s);
+	CopyBigInt(&r, rhs);
+	CopyBigInt(&old_r, lhs);
+	
+	old_s.data[0] = 1;
 
-	if (IsZeroBigInt(rhs)) {
-		memcpy(gcd->data, lhs->data, 512);
-		ZeroMemory(x, 512);
-		ZeroMemory(y, 512);
-		x->data[0] = 1;
-		return;
+	while (!IsZeroBigInt(&r)) {
+		struct BigInt q;
+		struct BigInt subBuf;
+		struct BigInt mulBuf;
+		struct BigInt oldBuf;
+		CopyBigInt(&subBuf, &old_r);
+		BigIntFactoryRef(&q);
+		BigIntFactoryRef(&mulBuf);
+		BigIntFactoryRef(&oldBuf);
+
+		ZeroBigInt(&remainderBuf);
+		//quotient := old_r div r
+		DivBigInt(&old_r, &r, &q, &remainderBuf);
+		//(old_r, r) := (r, old_r − quotient × r)
+		CopyBigInt(&oldBuf, &r);
+		CopyBigInt(&r, &remainderBuf);
+		CopyBigInt(&old_r, &oldBuf);
+		//(old_s, s) := (s, old_s − quotient × s)
+		CopyBigInt(&subBuf, &old_s);
+		ZeroBigInt(&mulBuf);
+		ZeroBigInt(&oldBuf);
+		CopyBigInt(&oldBuf, &s);
+		MulBigInt256(&q, &s, &mulBuf);
+		SubBigInt(&subBuf, &mulBuf);
+		CopyBigInt(&s, &subBuf);
+		CopyBigInt(&old_s, &oldBuf);
 	}
 
-	struct BigInt* x1 = BigIntFactory(x->type, 0);
+	struct BigInt bez;
+	BigIntFactoryRef(&bez);
+	if (!IsZeroBigInt(&rhs)) {
+		//bez := (old_r − old_s × a) div b
+		struct BigInt buf;
+		BigIntFactoryRef(&buf);
+		MulBigInt256(&old_s, lhs, &buf);
 
-	struct BigInt* y1 = BigIntFactory(y->type, 0);
+		CopyBigInt(&bez, &old_r);
+		SubBigInt(&bez, &buf);
+		ZeroBigInt(&buf);
 
-	BigIntFactoryRef(amodb);
-	ModBigIntRef(lhs, rhs, amodb);
-	byte sign = EuclideanGCD(gcd, rhs, amodb, x1, y1);
+		ZeroBigInt(&remainderBuf);
+		DivBigInt(&bez, rhs, &buf, &remainderBuf);
+		CopyBigInt(&bez, &buf);
+	}
 
-	memcpy(x, y1, sizeof x);
-
-	struct BigInt* x2 = BigIntFactoryMove(x1);
-	struct BigInt* res = BigIntFactory(y->type, 0);
-	struct BigInt* res1 = BigIntFactory(y->type, 0);
-
-	DivBigInt(lhs, rhs, res, rBuf);
-	free(rBuf);
-
-	MulBigInt256(res, y1, res1);
-
-	SubBigInt(x2, res1);
-
-	memcpy(y, x2, sizeof y);
-
-	free(x1);
-	free(y1);
-	free(res);
-	free(res1);
+	CopyBigInt(x, &old_s);
+	CopyBigInt(y, &bez);
+	CopyBigInt(gcd, &old_r);
 }

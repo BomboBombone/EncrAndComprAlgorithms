@@ -38,6 +38,11 @@ void ModBigInt(struct BigInt* base, struct BigInt* mod);
 void ModBigIntRef(struct BigInt* base, struct BigInt* mod, struct BigInt* out);
 unsigned int LenBigInt(struct BigInt* p);
 byte IsBiggerBigInt(struct BigInt* lhs, struct BigInt* rhs);
+void InvertSign(struct BigInt* p);
+void MakePositive(struct BigInt* p);
+byte EqualsBigInt(struct BigInt* lhs, struct BigInt* rhs);
+void ZeroBigInt(struct BigInt* p);
+byte IsZeroBigInt(struct BigInt* rhs);
 
 //Bit operations
 void ShiftRightBigInt(struct BigInt* base, unsigned int amount);
@@ -51,4 +56,3 @@ void GetBitsBigInt(struct BigInt* in, unsigned int start, unsigned int end, stru
 void PowmBigInt(struct BigInt* base, struct BigInt* mod, struct BigInt* power, struct BigInt* out);
 void PowmBigIntUInt(struct BigInt* base, struct BigInt* mod, unsigned int power, struct BigInt* out);
 void PowmBigIntChar(unsigned char base, struct BigInt* mod, unsigned int power, struct BigInt* out);
-byte IsZeroBigInt(struct BigInt* rhs);
